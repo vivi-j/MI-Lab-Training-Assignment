@@ -11,6 +11,7 @@ public class Movement : MonoBehaviour
 
     void Start()
     {
+        // Initialize position
         cameraTransform.position = Vector3.zero;
     }
 
@@ -36,7 +37,5 @@ public class Movement : MonoBehaviour
 
         // Apply rotation
         cameraTransform.Rotate(0, rightPrimaryAxis.x * rotationSpeed * Time.deltaTime, 0);
-
-
     }
 }
