@@ -9,12 +9,10 @@ public class Movement : MonoBehaviour
     public float rotationSpeed = 50.0f; // Rotation speed
     public Transform cameraTransform; // Character
 
-    private Quaternion initialRotation; // Initial rotation of the camera
-
     void Start()
     {
-        // Store the initial rotation of the camera
-        initialRotation = cameraTransform.rotation;
+        // Initialize position
+        cameraTransform.position = Vector3.zero;
     }
 
     void Update()
@@ -32,21 +30,12 @@ public class Movement : MonoBehaviour
         right.y = 0; // Ignore vertical movement
         right.Normalize();
 
-        // Apply rotation
-        cameraTransform.Rotate(0, rightPrimaryAxis.x * rotationSpeed * Time.deltaTime, 0);
-
-        // Recalculate forward and right vectors based on the updated rotation
-        forward = cameraTransform.forward;
-        forward.y = 0; // Ignore vertical movement
-        forward.Normalize();
-
-        right = cameraTransform.right;
-        right.y = 0; // Ignore vertical movement
-        right.Normalize();
-
         // Apply movement
         Vector3 moveDirection = forward * leftPrimaryAxis.y + right * leftPrimaryAxis.x;
         moveDirection.y = 0; // Keep movement in the horizontal plane
         cameraTransform.position += moveDirection * speed * Time.deltaTime;
+
+        // Apply rotation
+        cameraTransform.Rotate(0, rightPrimaryAxis.x * rotationSpeed * Time.deltaTime, 0);
     }
 }
