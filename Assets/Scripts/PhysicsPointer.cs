@@ -9,6 +9,8 @@ public class PhysicsPointer : MonoBehaviour
     private LineRenderer lineRenderer = null;
     private GameObject currentObject;
     private Outline currentOutline;
+    // private bool outlineEnabledOnce = false;
+
 
     private void Awake()
     {
@@ -20,6 +22,7 @@ public class PhysicsPointer : MonoBehaviour
     {
         UpdateLength();
         HandleRaycasts();
+        //HandleMenuActivation();
     }
 
     private void UpdateLength()
@@ -57,14 +60,38 @@ public class PhysicsPointer : MonoBehaviour
     {
         RaycastHit hitPrimary = CreateForwardRaycast(transform);
         RaycastHit hitSecondary = CreateForwardRaycast(secondaryPointer);
+        GameObject objects = null;
+
+        /*if (hitPrimary.collider.tag == "Object" || hitPrimary.collider.tag == "Cube" || hitPrimary.collider.tag == "Sphere")
+        {
+            objects = hitPrimary.collider.gameObject;
+            //outline = objects.GetComponent<Outline>();
+            //outline.enabled = true;
+            Canvas objectCanvas = currentObject.GetComponentInChildren<Canvas>();
+            if (objectCanvas != null && OVRInput.GetDown(OVRInput.Button.Two)) // B
+            {
+                objectCanvas.enabled = true;
+            }
+        }
+        else if (hitSecondary.collider.tag == "Object" || hitSecondary.collider.tag == "Cube" || hitSecondary.collider.tag == "Sphere")
+        {
+            objects = hitSecondary.collider.gameObject;
+            //outline = objects.GetComponent<Outline>();
+            //outline.enabled = true;
+            Canvas objectCanvas = currentObject.GetComponentInChildren<Canvas>();
+            if (objectCanvas != null && OVRInput.GetDown(OVRInput.Button.Two)) // B
+            {
+                objectCanvas.enabled = true;
+            }
+        }*/
 
         GameObject hitObject = null;
 
-        if (hitPrimary.collider && (hitPrimary.collider.tag == "Object" || hitPrimary.collider.tag == "Cube"))
+        if (hitPrimary.collider && (hitPrimary.collider.tag == "Object" || hitPrimary.collider.tag == "Cube" || hitPrimary.collider.tag == "Sphere"))
         {
             hitObject = hitPrimary.collider.gameObject;
         }
-        else if (hitSecondary.collider && (hitSecondary.collider.tag == "Object" || hitSecondary.collider.tag == "Cube"))
+        else if (hitSecondary.collider && (hitSecondary.collider.tag == "Object" || hitSecondary.collider.tag == "Cube" || hitSecondary.collider.tag == "Sphere"))
         {
             hitObject = hitSecondary.collider.gameObject;
         }
@@ -97,4 +124,24 @@ public class PhysicsPointer : MonoBehaviour
             }
         }
     }
+
+ /*   private void HandleMenuActivation()
+    {
+        RaycastHit hit = CreateForwardRaycast();
+        var Gameobject objects = null;
+        if (hit.collider.tag == "Object" || hit.collider.tag == "Cube" || hit.collider.tag == "Sphere")
+        {
+            objects = hit.collider.gameObject;
+            //outline = objects.GetComponent<Outline>();
+            //outline.enabled = true;
+            Canvas objectCanvas = currentObject.GetComponentInChildren<Canvas>();
+            if (objectCanvas != null)
+            {
+                objectCanvas.enabled = true;
+            }
+
+        }
+
+    }*/
+
 }

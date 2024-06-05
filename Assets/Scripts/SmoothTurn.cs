@@ -5,7 +5,20 @@ using UnityEngine;
 public class SmoothTurn : MonoBehaviour
 {
     public Transform player;
+    public Transform target; 
     public float speed;
+    //public Vector3 initialForwardDirection = Vector3.forward;
+
+    void Start()
+    {
+        //player.LookAt(new Vector3(target.position.x, player.position.y, target.position.z));
+        Vector3 direction = (target.position - player.position).normalized;
+        direction.y = 0; // Keep only the horizontal direction
+        player.rotation = Quaternion.LookRotation(direction);
+    }
+
+
+
     void Update()
     {
         var joystickAxis = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, OVRInput.Controller.RTouch);

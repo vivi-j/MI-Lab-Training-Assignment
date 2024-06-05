@@ -10,7 +10,7 @@ public class JoystickLocomotion : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
+        player.position = new Vector3(0, 3f, 0);
     }
 
     // Update is called once per frame
