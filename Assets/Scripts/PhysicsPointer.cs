@@ -92,6 +92,38 @@ public class PhysicsPointer : MonoBehaviour
             hitObject = hitSecondary.collider.gameObject;
             collisionPoint = hitSecondary.point;
         }
+        ///////////////////////////////////////////////////////////////////////
+        ///
+
+        // Button color change logic
+        if (hitObject != null && hitObject.name == "Button")
+        {
+            Image buttonImage = hitObject.GetComponent<Image>();
+            if (buttonImage != null)
+            {
+                buttonImage.color = new Color32(0xFF, 0x56, 0x56, 0xFF);
+            }
+        }
+
+        else
+        {
+            string[] tagsToCheck = { "Translation", "Rotation", "NoAction", "Exit", "XAxisTranslate", "NXAxisTranslate", "YAxisTranslate", "NYAxisTranslate", "ZAxisTranslate", "NZAxisTranslate", "CloseSubCanvas", "XAxisRotate", "NXAxisRotate", "YAxisRotate", "NYAxisRotate", "ZAxisRotate", "NZAxisRotate", "ChangeColor", "Scaling", "ScalingDecrease", "PowerRadio", "ChangeSong", "NoActionRadio", "Power", "NoActionLamp", "NoActionSphereLeft" };
+            foreach (string tagToCheck in tagsToCheck)
+            {
+                GameObject[] objectsWithTag = GameObject.FindGameObjectsWithTag(tagToCheck);
+                foreach (GameObject obj in objectsWithTag)
+                {
+                    Image objectImage = obj.GetComponent<Image>();
+                    if (objectImage != null)
+                    {
+                        objectImage.color = new Color32(0xFF, 0xFF, 0xE3, 0xFF);
+                    }
+                }
+
+            }
+
+        }
+
 
 
         ///////////////////////////////////////////////////////////////////////

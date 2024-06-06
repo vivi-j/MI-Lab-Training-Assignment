@@ -18,6 +18,12 @@ public class ButtonColorChange : MonoBehaviour, IPointerEnterHandler, IPointerEx
         originalColor = buttonImage.color;
     }
 
+    public void SetColor()
+    {
+        buttonImage.color = collisionColor;
+        Debug.Log("SET COLOR");
+    }
+
     // Called when pointer enters the button
     public void OnPointerEnter(PointerEventData eventData)
     {
