@@ -1,17 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class AudioSettings : MonoBehaviour
 {
     public AudioClip[] audioClips;  // Array to hold audio files
-    private AudioSource audioSource;
+    public AudioSource audioSource;
     private bool isPlaying = false; // Track if audio is currently playing
+    private GameObject fillObject;
+    private Image fillImage;
+    Color originalColor = new Color(164f / 255f, 177f / 255f, 255f / 255f); // A4B1FF in RGB values
 
     // Start is called before the first frame update
     void Start()
     {
+        fillObject = GameObject.FindWithTag("FillRadio");
         audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.volume = 1;
+        fillImage = fillObject.GetComponent<Image>();
+        fillImage.color = originalColor;
     }
 
     // Update is called once per frame

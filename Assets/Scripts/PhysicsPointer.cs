@@ -3,10 +3,12 @@ using UnityEngine.UI;
 
 public class PhysicsPointer : MonoBehaviour
 {
+    public float lampIntensity = 0.0f; // Default lamp intensity
     public float defaultLength;
+    public Slider intensitySlider; // Reference to the slider controlling lamp intensity
+    public Slider intensitySliderR;
     public Transform secondaryPointer; // Assign this in the inspector to another transform for the second ray
     public Color translationButtonColor; // Public variable for the button color change
-
     private LineRenderer lineRenderer = null;
     private GameObject currentObject;
     private Outline currentOutline;
@@ -24,11 +26,16 @@ public class PhysicsPointer : MonoBehaviour
     int pressCount = 0; // Counter to keep track of A button presses
     int ApressCount = 0; // Counter to keep track of A button presses
     int numSongCount = 1;
+    // Define a variable to track the direction of movement
+    private bool increasing = true;
+    private bool increasingR = true;
+    private GameObject fillObject;
+    private GameObject fillObjectR;
 
-    public GameObject collisionSpritePrefab; // Assign this in the inspector to the sprite GameObject
+
+    //  public GameObject collisionSpritePrefab; // Assign this in the inspector to the sprite GameObject
     private GameObject collisionSpriteInstance;
     private Vector3 collisionPoint;
-
     private bool spriteActive = false;
 
 
@@ -96,7 +103,7 @@ public class PhysicsPointer : MonoBehaviour
         ///
 
         // Button color change logic
-        if (hitObject != null && hitObject.name == "Button")
+        if (hitObject != null && (hitObject.name == "Button" || hitObject.name == "Handle" || hitObject.name == "HandleRadio"))
         {
             Image buttonImage = hitObject.GetComponent<Image>();
             if (buttonImage != null)
@@ -107,7 +114,7 @@ public class PhysicsPointer : MonoBehaviour
 
         else
         {
-            string[] tagsToCheck = { "Translation", "Rotation", "NoAction", "Exit", "XAxisTranslate", "NXAxisTranslate", "YAxisTranslate", "NYAxisTranslate", "ZAxisTranslate", "NZAxisTranslate", "CloseSubCanvas", "XAxisRotate", "NXAxisRotate", "YAxisRotate", "NYAxisRotate", "ZAxisRotate", "NZAxisRotate", "ChangeColor", "Scaling", "ScalingDecrease", "PowerRadio", "ChangeSong", "NoActionRadio", "Power", "NoActionLamp", "NoActionSphereLeft" };
+            string[] tagsToCheck = { "Translation", "Rotation", "NoAction", "Exit", "XAxisTranslate", "NXAxisTranslate", "YAxisTranslate", "NYAxisTranslate", "ZAxisTranslate", "NZAxisTranslate", "CloseSubCanvas", "XAxisRotate", "NXAxisRotate", "YAxisRotate", "NYAxisRotate", "ZAxisRotate", "NZAxisRotate", "ChangeColor", "Scaling", "ScalingDecrease", "PowerRadio", "ChangeSong", "NoActionRadio", "Power", "NoActionLamp", "NoActionSphereLeft", "Handle", "HandleRadio" };
             foreach (string tagToCheck in tagsToCheck)
             {
                 GameObject[] objectsWithTag = GameObject.FindGameObjectsWithTag(tagToCheck);
@@ -131,20 +138,22 @@ public class PhysicsPointer : MonoBehaviour
         // Check if either pointer collides with something tagged "Translation"
         if (((hitPrimary.collider && hitPrimary.collider.tag == "Translation") || (hitSecondary.collider && hitSecondary.collider.tag == "Translation")) && OVRInput.GetDown(OVRInput.Button.One))
         {
-            Debug.Log("TRANSLATION SELECTED");
-            Canvas parentCanvas = hitPrimary.collider.GetComponentInParent<Canvas>();
-            if (parentCanvas != null)
-            {
-                Canvas[] subCanvases = parentCanvas.GetComponentsInChildren<Canvas>();
-                foreach (Canvas subCanvas in subCanvases)
-                {
-                    if (subCanvas.CompareTag("SubCanvas"))
-                    {
-                        subCanvasCubeT = subCanvas;
-                        subCanvasCubeT.enabled = !subCanvasCubeT.enabled; // Toggle the enabled state
-                    }
-                }
+            Canvas[] canvases = FindObjectsOfType<Canvas>();
+            Canvas subCanvas = null;
 
+            foreach (Canvas canvas in canvases)
+            {
+                if (canvas.gameObject.name == "SubCanvas")
+                {
+                    subCanvas = canvas;
+                    break;
+                }
+            }
+
+            if (subCanvas != null)
+            {
+                Debug.Log("TRANSLATION SELECTED");
+                subCanvas.enabled = true;
             }
         }
 
@@ -193,20 +202,22 @@ public class PhysicsPointer : MonoBehaviour
         
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "Rotation") || (hitSecondary.collider && hitSecondary.collider.tag == "Rotation")) && OVRInput.GetDown(OVRInput.Button.One))
         {
-            Debug.Log("ROTATION SELECTED");
-            Canvas parentCanvas = hitPrimary.collider.GetComponentInParent<Canvas>();
-            if (parentCanvas != null)
-            {
-                Canvas[] subCanvases = parentCanvas.GetComponentsInChildren<Canvas>();
-                foreach (Canvas subCanvas in subCanvases)
-                {
-                    if (subCanvas.CompareTag("SubCanvasRotation"))
-                    {
-                        subCanvasCubeR = subCanvas;
-                        subCanvasCubeR.enabled = !subCanvasCubeR.enabled; // Toggle the enabled state
-                    }
-                }
+            Canvas[] canvases = FindObjectsOfType<Canvas>();
+            Canvas subCanvas = null;
 
+            foreach (Canvas canvas in canvases)
+            {
+                if (canvas.gameObject.name == "SubCanvas1")
+                {
+                    subCanvas = canvas;
+                    break;
+                }
+            }
+
+            if (subCanvas != null)
+            {
+                Debug.Log("ROTATION SELECTED");
+                subCanvas.enabled = true;
             }
 
         }
@@ -335,6 +346,61 @@ public class PhysicsPointer : MonoBehaviour
         }
 
 
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "Handle") || (hitSecondary.collider && hitSecondary.collider.tag == "Handle")))
+        {
+            if (OVRInput.Get(OVRInput.Button.One))
+            {
+                mode = 20; // Set mode to 20
+                lastActionMode = mode;
+                Debug.Log("Mode: " + mode); // Print mode on debug log
+
+                // Check if the slider value is increasing and within the range (0, 1)
+                if (increasing && intensitySlider.value < 1)
+                {
+                    // Increase the slider value
+                    intensitySlider.value += 0.1f;
+                }
+                // Check if the slider value is decreasing and within the range (0, 1)
+                else if (!increasing && intensitySlider.value > 0)
+                {
+                    // Decrease the slider value
+                    intensitySlider.value -= 0.1f;
+                }
+                // If the slider value reaches the upper limit (1), switch to decreasing
+                else if (intensitySlider.value >= 1)
+                {
+                    increasing = false;
+                }
+                // If the slider value reaches the lower limit (0), switch to increasing
+                else if (intensitySlider.value <= 0)
+                {
+                    increasing = true;
+                }
+            }
+
+            // find obhect with tag fill and change its image's color to red
+            fillObject = GameObject.FindWithTag("Fill");
+
+            // Check if the fillObject is found
+            if (fillObject != null)
+            {
+                Image fillImage = fillObject.GetComponent<Image>();
+                fillImage.color = originalColor;
+            }
+            else
+            {
+                Debug.Log("Fill onj is null");
+            }
+
+            GameObject lampObject = GameObject.FindWithTag("Lamp");
+            float minIntensity = 1f;
+            float maxIntensity = 5f;
+            float intensityValue = minIntensity + (maxIntensity - minIntensity) * intensitySlider.value;
+            lampObject.GetComponent<Lamp>().intensityVal = (int)intensityValue;
+
+        }
+
+
 
         // 18 for no action lamp
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NoActionLamp") || (hitSecondary.collider && hitSecondary.collider.tag == "NoActionLamp")) && OVRInput.GetDown(OVRInput.Button.One))
@@ -348,6 +414,62 @@ public class PhysicsPointer : MonoBehaviour
         /////////////////////////
         /// ALL RADIO STUFF HERE
         /// 
+
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "HandleRadio") || (hitSecondary.collider && hitSecondary.collider.tag == "HandleRadio")))
+        {
+            if (OVRInput.Get(OVRInput.Button.One))
+            {
+                mode = 25; // Set mode to 20
+                lastActionMode = mode;
+                Debug.Log("Mode: " + mode); // Print mode on debug log
+
+                // Check if the slider value is increasing and within the range (0, 1)
+                if (increasingR && intensitySliderR.value < 1)
+                {
+                    // Increase the slider value
+                    intensitySliderR.value += 0.1f;
+                }
+                // Check if the slider value is decreasing and within the range (0, 1)
+                else if (!increasingR && intensitySliderR.value > 0)
+                {
+                    // Decrease the slider value
+                    intensitySliderR.value -= 0.1f;
+                }
+                // If the slider value reaches the upper limit (1), switch to decreasing
+                else if (intensitySliderR.value >= 1)
+                {
+                    increasingR = false;
+                }
+                // If the slider value reaches the lower limit (0), switch to increasing
+                else if (intensitySliderR.value <= 0)
+                {
+                    increasingR = true;
+                }
+
+                Debug.Log("HERE: " + intensitySliderR.value + " end");
+                GameObject radioObject = GameObject.FindWithTag("RadioVintage");
+                AudioSettings audioSettings = radioObject.GetComponent<AudioSettings>();
+                audioSettings.audioSource.volume = intensitySliderR.value;
+               // Debug.Log("current volume: " + intensitySliderR.value);
+
+            }
+
+            // find obhect with tag fill and change its image's color to red
+            fillObjectR = GameObject.FindWithTag("FillRadio");
+
+            // Check if the fillObject is found
+            if (fillObjectR != null)
+            {
+                Image fillImage = fillObjectR.GetComponent<Image>();
+                fillImage.color = originalColor;
+                Debug.Log("Fill obj radio exists");
+            }
+            else
+            {
+                Debug.Log("Fill onj is null");
+            }
+
+        }
 
 
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "PowerRadio") || (hitSecondary.collider && hitSecondary.collider.tag == "PowerRadio")))
@@ -396,12 +518,9 @@ public class PhysicsPointer : MonoBehaviour
                     mode = 19; // Set mode to 21
                     lastActionMode = mode;
                     Debug.Log("Mode: " + mode); // Print mode on debug log
-
                     numSongCount++; // Increment the press count on A button press
                     Debug.Log("Num Song Count Count: " + numSongCount);
-                    
                     audioSettings.PlayAudioClip(numSongCount%5);
-                    
                 }
             }
 
@@ -413,11 +532,10 @@ public class PhysicsPointer : MonoBehaviour
 
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NoActionRadio") || (hitSecondary.collider && hitSecondary.collider.tag == "NoActionRadio")) && OVRInput.GetDown(OVRInput.Button.One))
         {
-            mode = 20; // Set mode to 2
+            //mode = ; // Set mode to 2 change number
             lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
-
 
         /////////////////////////
 
@@ -593,9 +711,6 @@ public class PhysicsPointer : MonoBehaviour
                     {
                         if (isFirstPress)
                         {
-                            // Store the original color
-                            originalColor = material.color;
-
                             // Change to a random color
                             Color newColor = new Color(Random.value, Random.value, Random.value);
                             material.color = newColor;
@@ -713,6 +828,9 @@ public class PhysicsPointer : MonoBehaviour
             mode = lastActionMode;
 
         }
+
+
+
 
         // power mode is 17
     }

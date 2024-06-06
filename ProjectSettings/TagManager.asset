@@ -37,6 +37,10 @@ TagManager:
   - ChangeSong
   - NoActionRadio
   - PowerRadio
+  - Handle
+  - Fill
+  - HandleRadio
+  - FillRadio
   layers:
   - Default
   - TransparentFX

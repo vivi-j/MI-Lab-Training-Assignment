@@ -20,11 +20,11 @@ public class InteractableSlider : MonoBehaviour
         {
             isIncreasing = false;
         }
-
+        /*
         if (isIncreasing)
         {
             currentValue += increaseSpeed * Time.deltaTime;
             slider.value = Mathf.Clamp01(currentValue); // force val between 0 and 1 
-        }
+        }*/
     }
 }
