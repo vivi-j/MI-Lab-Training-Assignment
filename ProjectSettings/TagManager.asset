@@ -6,6 +6,37 @@ TagManager:
   tags:
   - Object
   - Cube
+  - Sphere
+  - Translation
+  - Rotation
+  - NoAction
+  - Exit
+  - ChangeColor
+  - Scaling
+  - XAxisTranslate
+  - YAxisTranslate
+  - ZAxisTranslate
+  - CloseSubCanvas
+  - XAxisRotate
+  - YAxisRotate
+  - ZAxisRotate
+  - NXAxisTranslate
+  - NYAxisTranslate
+  - NZAxisTranslate
+  - SubCanvas
+  - SubCanvasRotation
+  - NXAxisRotate
+  - NYAxisRotate
+  - NZAxisRotate
+  - ScalingDecrease
+  - NoActionSphereLeft
+  - Lamp
+  - Radio
+  - Power
+  - NoActionLamp
+  - ChangeSong
+  - NoActionRadio
+  - PowerRadio
   layers:
   - Default
   - TransparentFX

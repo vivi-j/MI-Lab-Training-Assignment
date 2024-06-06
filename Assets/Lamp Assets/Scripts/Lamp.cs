@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class Lamp : MonoBehaviour {
 
-    [HideInInspector]
     public GameObject LampLight;
 
     [HideInInspector]
@@ -14,11 +13,12 @@ public class Lamp : MonoBehaviour {
     public GameObject DomeOn;
 
     public bool TurnOn;
-    
-    
+    public int intensityVal = 1;
+    private Light lampLightComponent;
 
-	// Use this for initialization
-	void Start () {
+
+    // Use this for initialization
+    void Start () {
     }
 	
 	// Update is called once per frame
@@ -29,6 +29,11 @@ public class Lamp : MonoBehaviour {
         if (TurnOn== true)
         {
             LampLight.SetActive(true);
+            lampLightComponent = LampLight.GetComponent<Light>();
+            if (lampLightComponent != null)
+            {
+                lampLightComponent.intensity = intensityVal;
+            }
             DomeOff.SetActive(false);
             DomeOn.SetActive(true);
 
