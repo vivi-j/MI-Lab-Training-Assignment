@@ -3,6 +3,11 @@ using UnityEngine.UI;
 
 public class PhysicsPointer : MonoBehaviour
 {
+    public GameObject openReticleSprite;
+    public GameObject closedReticleSprite;
+    public Material normalMaterial;
+    public Material pressedMaterial;
+    public Renderer pointerRenderer;
     public float lampIntensity = 0.0f; // Default lamp intensity
     public float defaultLength;
     public Slider intensitySlider; // Reference to the slider controlling lamp intensity
@@ -32,21 +37,30 @@ public class PhysicsPointer : MonoBehaviour
     private GameObject fillObject;
     private GameObject fillObjectR;
 
-
-    //  public GameObject collisionSpritePrefab; // Assign this in the inspector to the sprite GameObject
-    private GameObject collisionSpriteInstance;
-    private Vector3 collisionPoint;
-    private bool spriteActive = false;
-
+    public Renderer otherRenderer;
+    private LineRenderer otherLineRenderer = null;
 
 
     private void Awake()
     {
         lineRenderer = GetComponent<LineRenderer>();
+        otherLineRenderer = otherRenderer.GetComponent<LineRenderer>();
     }
 
     private void Update()
     {
+        // if there is any press on the controller, change the material of the pointer
+
+        // Check if any button on the controller is pressed
+        if (OVRInput.Get(OVRInput.Button.Any))
+        {
+            pointerRenderer.material = pressedMaterial;
+        }
+        else
+        {
+            pointerRenderer.material = normalMaterial;
+        }
+
         UpdateLength();
         HandleRaycasts();
     }
@@ -63,7 +77,35 @@ public class PhysicsPointer : MonoBehaviour
         Vector3 endPosition = DefaultEnd(pointer, defaultLength);
 
         if (hit.collider)
-            endPosition = hit.point;
+        {
+        endPosition = hit.point + hit.normal * 0.05f; // Adjust the multiplier as needed
+
+            // Activate and set position of open reticle sprite
+            openReticleSprite.transform.position = hit.point;
+            openReticleSprite.SetActive(true);
+            // Make open reticle face towards the center eye camera
+            openReticleSprite.transform.localScale = Vector3.one * 0.1f;
+            openReticleSprite.transform.LookAt(Camera.main.transform.position);
+
+            // Activate and set position of closed reticle sprite when any button is pressed
+            if (OVRInput.Get(OVRInput.Button.Any))
+            {
+                closedReticleSprite.transform.position = hit.point;
+                closedReticleSprite.SetActive(true);
+                // Make closed reticle face towards the center eye camera
+                closedReticleSprite.transform.LookAt(Camera.main.transform.position);
+                closedReticleSprite.transform.localScale = Vector3.one * 0.1f;
+            }
+            else // Disable closed reticle sprite if no button is pressed
+            {
+                closedReticleSprite.SetActive(false);
+            }
+        }
+        else // Disable both reticle sprites if there is no collision
+        {
+            openReticleSprite.SetActive(false);
+            closedReticleSprite.SetActive(false);
+        }
 
         return endPosition;
     }
@@ -92,12 +134,10 @@ public class PhysicsPointer : MonoBehaviour
         if (hitPrimary.collider)
         {
             hitObject = hitPrimary.collider.gameObject;
-            collisionPoint = hitPrimary.point;
         }
         else if (hitSecondary.collider)
         {
             hitObject = hitSecondary.collider.gameObject;
-            collisionPoint = hitSecondary.point;
         }
         ///////////////////////////////////////////////////////////////////////
         ///
@@ -114,7 +154,7 @@ public class PhysicsPointer : MonoBehaviour
 
         else
         {
-            string[] tagsToCheck = { "Translation", "Rotation", "NoAction", "Exit", "XAxisTranslate", "NXAxisTranslate", "YAxisTranslate", "NYAxisTranslate", "ZAxisTranslate", "NZAxisTranslate", "CloseSubCanvas", "XAxisRotate", "NXAxisRotate", "YAxisRotate", "NYAxisRotate", "ZAxisRotate", "NZAxisRotate", "ChangeColor", "Scaling", "ScalingDecrease", "PowerRadio", "ChangeSong", "NoActionRadio", "Power", "NoActionLamp", "NoActionSphereLeft", "Handle", "HandleRadio" };
+            string[] tagsToCheck = { "Translation", "Rotation", "RotationM", "RotationR", "NoAction", "Exit", "XAxisTranslate", "TranslationM", "TranslationR", "NXAxisTranslate", "YAxisTranslate", "NYAxisTranslate", "ZAxisTranslate", "NZAxisTranslate", "CloseSubCanvas", "CloseSubCanvasR", "XAxisRotate", "NXAxisRotate", "YAxisRotate", "NYAxisRotate", "ZAxisRotate", "NZAxisRotate", "ChangeColor", "Scaling", "ScalingDecrease", "PowerRadio", "ChangeSong", "NoActionRadio", "Power", "NoActionLamp", "NoActionSphereLeft", "Handle", "HandleRadio", "ExitRadio", "ExitLamp" };
             foreach (string tagToCheck in tagsToCheck)
             {
                 GameObject[] objectsWithTag = GameObject.FindGameObjectsWithTag(tagToCheck);
@@ -143,7 +183,29 @@ public class PhysicsPointer : MonoBehaviour
 
             foreach (Canvas canvas in canvases)
             {
-                if (canvas.gameObject.name == "SubCanvas")
+                if (canvas.gameObject.name == "SubCanvasL")
+                {
+                    subCanvas = canvas;
+                    break;
+                }
+            }
+
+            if (subCanvas != null)
+            {
+                Debug.Log("TRANSLATION SELECTED");
+                subCanvas.enabled = true;
+            }
+        }
+
+        // Check if either pointer collides with something tagged "Translation"
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "TranslationM") || (hitSecondary.collider && hitSecondary.collider.tag == "TranslationM")) && OVRInput.GetDown(OVRInput.Button.One))
+        {
+            Canvas[] canvases = FindObjectsOfType<Canvas>();
+            Canvas subCanvas = null;
+
+            foreach (Canvas canvas in canvases)
+            {
+                if (canvas.gameObject.name == "SubCanvasM")
                 {
                     subCanvas = canvas;
                     break;
@@ -158,29 +220,58 @@ public class PhysicsPointer : MonoBehaviour
         }
 
 
+        // Check if either pointer collides with something tagged "Translation"
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "TranslationR") || (hitSecondary.collider && hitSecondary.collider.tag == "TranslationR")) && OVRInput.GetDown(OVRInput.Button.One))
+        {
+            Canvas[] canvases = FindObjectsOfType<Canvas>();
+            Canvas subCanvas = null;
+
+            foreach (Canvas canvas in canvases)
+            {
+                if (canvas.gameObject.name == "SubCanvasR")
+                {
+                    subCanvas = canvas;
+                    break;
+                }
+            }
+
+            if (subCanvas != null)
+            {
+                Debug.Log("TRANSLATION SELECTED");
+                subCanvas.enabled = true;
+            }
+        }
+
+
+
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "XAxisTranslate") || (hitSecondary.collider && hitSecondary.collider.tag == "XAxisTranslate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 1; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "YAxisTranslate") || (hitSecondary.collider && hitSecondary.collider.tag == "YAxisTranslate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 2; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "ZAxisTranslate") || (hitSecondary.collider && hitSecondary.collider.tag == "ZAxisTranslate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 3; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NXAxisTranslate") || (hitSecondary.collider && hitSecondary.collider.tag == "NXAxisTranslate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 4; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NYAxisTranslate") || (hitSecondary.collider && hitSecondary.collider.tag == "NYAxisTranslate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 5; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NZAxisTranslate") || (hitSecondary.collider && hitSecondary.collider.tag == "NZAxisTranslate")) && OVRInput.GetDown(OVRInput.Button.One))
@@ -189,17 +280,66 @@ public class PhysicsPointer : MonoBehaviour
             lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
+
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "CloseSubCanvas") || (hitSecondary.collider && hitSecondary.collider.tag == "CloseSubCanvas")) && OVRInput.GetDown(OVRInput.Button.One))
         {
-            //GameObject parentObject = hitPrimary.collider.gameObject.transform.parent.gameObject;
-            // Disable the parent object
-            //parentObject.SetActive(false);
-            subCanvasCubeT.enabled = false;
-            Debug.Log("Disabling subcanvas"); // Print mode on debug log
+            // Determine which collider was hit
+            Collider hitCollider = hitPrimary.collider ? hitPrimary.collider : hitSecondary.collider;
+
+            // Check if the hitCollider is not null
+            if (hitCollider != null)
+            {
+                // Find the parent object of the hit collider and disable it
+                Canvas parentCanvas = hitCollider.GetComponentInParent<Canvas>();
+
+                if (parentCanvas != null)
+                {
+                    parentCanvas.enabled = false;
+                    Debug.Log("Parent object of CloseSubCanvas disabled.");
+                }
+                else
+                {
+                    Debug.LogWarning("No parent object found for the CloseSubCanvas collider.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("No valid collider hit for CloseSubCanvas.");
+            }
         }
 
+
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "CloseSubCanvasR") || (hitSecondary.collider && hitSecondary.collider.tag == "CloseSubCanvasR")) && OVRInput.GetDown(OVRInput.Button.One))
+        {
+            // Determine which collider was hit
+            Collider hitCollider = hitPrimary.collider ? hitPrimary.collider : hitSecondary.collider;
+
+            // Check if the hitCollider is not null
+            if (hitCollider != null)
+            {
+                // Find the parent object of the hit collider and disable it
+                Canvas parentCanvas = hitCollider.GetComponentInParent<Canvas>();
+
+                if (parentCanvas != null)
+                {
+                    parentCanvas.enabled = false;
+                    Debug.Log("Parent object of CloseSubCanvasR disabled.");
+                }
+                else
+                {
+                    Debug.LogWarning("No parent object found for the CloseSubCanvas collider.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("No valid collider hit for CloseSubCanvas.");
+            }
+        }
+
+
+
         ///////////////////////////////////////////////////////////////////////
-        
+
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "Rotation") || (hitSecondary.collider && hitSecondary.collider.tag == "Rotation")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             Canvas[] canvases = FindObjectsOfType<Canvas>();
@@ -222,45 +362,97 @@ public class PhysicsPointer : MonoBehaviour
 
         }
 
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "RotationM") || (hitSecondary.collider && hitSecondary.collider.tag == "RotationM")) && OVRInput.GetDown(OVRInput.Button.One))
+        {
+            Canvas[] canvases = FindObjectsOfType<Canvas>();
+            Canvas subCanvas = null;
+
+            foreach (Canvas canvas in canvases)
+            {
+                if (canvas.gameObject.name == "SubCanvas1M")
+                {
+                    subCanvas = canvas;
+                    break;
+                }
+            }
+
+            if (subCanvas != null)
+            {
+                Debug.Log("ROTATION SELECTED");
+                subCanvas.enabled = true;
+            }
+
+        }
+
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "RotationR") || (hitSecondary.collider && hitSecondary.collider.tag == "RotationR")) && OVRInput.GetDown(OVRInput.Button.One))
+        {
+            Canvas[] canvases = FindObjectsOfType<Canvas>();
+            Canvas subCanvas = null;
+
+            foreach (Canvas canvas in canvases)
+            {
+                if (canvas.gameObject.name == "SubCanvas1R")
+                {
+                    subCanvas = canvas;
+                    break;
+                }
+            }
+
+            if (subCanvas != null)
+            {
+                Debug.Log("ROTATION SELECTED");
+                subCanvas.enabled = true;
+            }
+
+        }
+
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "XAxisRotate") || (hitSecondary.collider && hitSecondary.collider.tag == "XAxisRotate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 7; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "YAxisRotate") || (hitSecondary.collider && hitSecondary.collider.tag == "YAxisRotate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 8; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "ZAxisRotate") || (hitSecondary.collider && hitSecondary.collider.tag == "ZAxisRotate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 9; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NXAxisRotate") || (hitSecondary.collider && hitSecondary.collider.tag == "NXAxisRotate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 10; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NYAxisRotate") || (hitSecondary.collider && hitSecondary.collider.tag == "NYAxisRotate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 11; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NZAxisRotate") || (hitSecondary.collider && hitSecondary.collider.tag == "NZAxisRotate")) && OVRInput.GetDown(OVRInput.Button.One))
         {
             mode = 12; // Set mode to 1
+            lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
 
-        else if (((hitPrimary.collider && hitPrimary.collider.tag == "CloseSubCanvas") || (hitSecondary.collider && hitSecondary.collider.tag == "CloseSubCanvas")) && OVRInput.GetDown(OVRInput.Button.One))
+
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "NoAction") || (hitSecondary.collider && hitSecondary.collider.tag == "NoAction")) && OVRInput.GetDown(OVRInput.Button.One))
         {
-            //GameObject parentObject = hitPrimary.collider.gameObject.transform.parent.gameObject;
-            // Disable the parent object
-            //parentObject.SetActive(false);
-            subCanvasCubeR.enabled = false;
-            Debug.Log("Disabling subcanvas"); // Print mode on debug log
+            mode = 36;
+            lastActionMode = mode;
+            Debug.Log("Mode: " + mode); // Print mode on debug log
         }
+
+       
+
 
 
         //////////////////////////////////////////////////////////////////////////
@@ -297,7 +489,50 @@ public class PhysicsPointer : MonoBehaviour
             mode = -1; // Set mode to 2
             Debug.Log("Mode: " + mode); // Print mode on debug log
         }
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "ExitRadio") || (hitSecondary.collider && hitSecondary.collider.tag == "ExitRadio")) && OVRInput.GetDown(OVRInput.Button.One))
+        {
+            //mode = -2; // Set mode to 2
+            Debug.Log("Mode: " + mode); // Print mode on debug log
 
+            Debug.Log("Last mode: " + lastActionMode);
+
+            // Find all Canvas objects with the tag "RadioCanvas"
+            Canvas[] radioCanvases = GameObject.FindObjectsOfType<Canvas>();
+            foreach (Canvas radioCanvas in radioCanvases)
+            {
+                if (radioCanvas.CompareTag("RadioCanvas"))
+                {
+                    Debug.Log("Canvas name: " + radioCanvas.gameObject.name);
+                    // Disable the Canvas
+                    radioCanvas.enabled = false;
+                }
+            }
+
+            mode = lastActionMode;
+
+        }
+        else if (((hitPrimary.collider && hitPrimary.collider.tag == "ExitLamp") || (hitSecondary.collider && hitSecondary.collider.tag == "ExitLamp")) && OVRInput.GetDown(OVRInput.Button.One))
+        {
+            //mode = -3; // Set mode to 2
+            Debug.Log("Mode: " + mode); // Print mode on debug log
+
+            Debug.Log("Last mode: " + lastActionMode);
+
+            // Find all Canvas objects with the tag "RadioCanvas"
+            Canvas[] radioCanvases = GameObject.FindObjectsOfType<Canvas>();
+            foreach (Canvas radioCanvas in radioCanvases)
+            {
+                if (radioCanvas.CompareTag("LampCanvas"))
+                {
+                    Debug.Log("Canvas name: " + radioCanvas.gameObject.name);
+                    // Disable the Canvas
+                    radioCanvas.enabled = false;
+                }
+            }
+
+            mode = lastActionMode;
+
+        }
         /////////////////////////
         /// ALL LMAP STUFF HERE
 
@@ -354,28 +589,23 @@ public class PhysicsPointer : MonoBehaviour
                 lastActionMode = mode;
                 Debug.Log("Mode: " + mode); // Print mode on debug log
 
-                // Check if the slider value is increasing and within the range (0, 1)
-                if (increasing && intensitySlider.value < 1)
-                {
-                    // Increase the slider value
-                    intensitySlider.value += 0.1f;
-                }
-                // Check if the slider value is decreasing and within the range (0, 1)
-                else if (!increasing && intensitySlider.value > 0)
-                {
-                    // Decrease the slider value
-                    intensitySlider.value -= 0.1f;
-                }
-                // If the slider value reaches the upper limit (1), switch to decreasing
-                else if (intensitySlider.value >= 1)
-                {
-                    increasing = false;
-                }
-                // If the slider value reaches the lower limit (0), switch to increasing
-                else if (intensitySlider.value <= 0)
-                {
-                    increasing = true;
-                }
+                Vector3 pointerPosition = (hitPrimary.collider != null) ? hitPrimary.point : hitSecondary.point;
+
+                // Calculate the position of the pointer relative to the handle
+                float distanceFromHandle = pointerPosition.x - hitPrimary.collider.transform.position.x;
+
+                // Calculate the intensity slider value based on the pointer position
+                float sliderValue = Mathf.Clamp01((distanceFromHandle)); // 10 = maxDistance
+
+                // Update the intensity slider value
+                intensitySlider.value = sliderValue;
+                Debug.Log("distancefromhandle: " + distanceFromHandle);
+                Debug.Log("sliderval: " + sliderValue);
+                Debug.Log("pointerposition: " + pointerPosition.x);
+                Debug.Log("collider pos: " + hitPrimary.collider.transform.position.x);
+
+
+
             }
 
             // find obhect with tag fill and change its image's color to red
@@ -392,11 +622,6 @@ public class PhysicsPointer : MonoBehaviour
                 Debug.Log("Fill onj is null");
             }
 
-            GameObject lampObject = GameObject.FindWithTag("Lamp");
-            float minIntensity = 1f;
-            float maxIntensity = 5f;
-            float intensityValue = minIntensity + (maxIntensity - minIntensity) * intensitySlider.value;
-            lampObject.GetComponent<Lamp>().intensityVal = (int)intensityValue;
 
         }
 
@@ -408,6 +633,42 @@ public class PhysicsPointer : MonoBehaviour
             mode = 18; // Set mode to 2
             lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
+
+            GameObject lamp = GameObject.Find("Lamp");
+            Rigidbody rb = lamp.GetComponent<Rigidbody>();
+            if (lamp != null)
+            {
+                // Set RadioVintage's position
+                Transform parentTransform = lamp.transform.parent;
+                if (parentTransform != null)
+                {
+                    rb.useGravity = false; // Disable gravity
+                    // Assuming the parent is the table and we want to set the RadioVintage on top of it
+                    // Adjust x and z coordinates as needed, keeping y relative to the table's height
+                    lamp.transform.position = new Vector3(
+                        -1f,
+                        parentTransform.position.y + 0.532999992f, // Adjusted to keep it on top of the table
+                        2.5f
+                    );
+                    lamp.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+                }
+
+                Lamp lampScript = lamp.GetComponent<Lamp>();
+                if (lampScript != null)
+                {
+                    rb.useGravity = true;
+                    lampScript.TurnOn = false; // Turn off the lamp
+                    lampScript.intensityVal = 1;
+                }
+
+
+            }
+            else
+            {
+                Debug.LogWarning("RadioVintage object not found.");
+            }
+
+
         }
 
 
@@ -427,13 +688,13 @@ public class PhysicsPointer : MonoBehaviour
                 if (increasingR && intensitySliderR.value < 1)
                 {
                     // Increase the slider value
-                    intensitySliderR.value += 0.1f;
+                    intensitySliderR.value += 0.03f;
                 }
                 // Check if the slider value is decreasing and within the range (0, 1)
                 else if (!increasingR && intensitySliderR.value > 0)
                 {
                     // Decrease the slider value
-                    intensitySliderR.value -= 0.1f;
+                    intensitySliderR.value -= 0.03f;
                 }
                 // If the slider value reaches the upper limit (1), switch to decreasing
                 else if (intensitySliderR.value >= 1)
@@ -447,10 +708,9 @@ public class PhysicsPointer : MonoBehaviour
                 }
 
                 Debug.Log("HERE: " + intensitySliderR.value + " end");
-                GameObject radioObject = GameObject.FindWithTag("RadioVintage");
-                AudioSettings audioSettings = radioObject.GetComponent<AudioSettings>();
-                audioSettings.audioSource.volume = intensitySliderR.value;
-               // Debug.Log("current volume: " + intensitySliderR.value);
+                GameObject radioObject = GameObject.FindWithTag("Radio");
+                AudioSource audioSettings = radioObject.GetComponent<AudioSource>();
+                audioSettings.volume = intensitySliderR.value;
 
             }
 
@@ -532,10 +792,52 @@ public class PhysicsPointer : MonoBehaviour
 
         else if (((hitPrimary.collider && hitPrimary.collider.tag == "NoActionRadio") || (hitSecondary.collider && hitSecondary.collider.tag == "NoActionRadio")) && OVRInput.GetDown(OVRInput.Button.One))
         {
-            //mode = ; // Set mode to 2 change number
+            // Set mode to 23
+            mode = 23;
             lastActionMode = mode;
             Debug.Log("Mode: " + mode); // Print mode on debug log
+
+            // Find the RadioVintage object
+            GameObject radioVintage = GameObject.Find("RadioVintage");
+            Rigidbody rb = radioVintage.GetComponent<Rigidbody>();
+            if (radioVintage != null)
+            {
+                // Set RadioVintage's position
+                Transform parentTransform = radioVintage.transform.parent;
+                if (parentTransform != null)
+                {
+                    rb.useGravity = false; // Disable gravity
+                    // Assuming the parent is the table and we want to set the RadioVintage on top of it
+                    // Adjust x and z coordinates as needed, keeping y relative to the table's height
+                    radioVintage.transform.position = new Vector3(
+                        0.910338998f,
+                        parentTransform.position.y + 0.532999992f, // Adjusted to keep it on top of the table
+                        2.5f
+                    );
+                    radioVintage.transform.rotation = Quaternion.Euler(0f, -180f, 0f);
+                }
+
+                // Call the StopAudio() function from the AudioSettings script
+                AudioSettings audioSettings = radioVintage.GetComponent<AudioSettings>();
+                if (audioSettings != null)
+                {
+                    audioSettings.StopAudio();
+                }
+
+                // Set RadioVintage's AudioSource volume to 1
+                AudioSource audioSource = radioVintage.GetComponent<AudioSource>();
+                if (audioSource != null)
+                {
+                    rb.useGravity = true;
+                    audioSource.volume = 1f;
+                }
+            }
+            else
+            {
+                Debug.LogWarning("RadioVintage object not found.");
+            }
         }
+
 
         /////////////////////////
 
@@ -543,8 +845,8 @@ public class PhysicsPointer : MonoBehaviour
         else
         {
             // If not colliding with UI elements, check if either pointer is pointing at an object tagged "Object", "Cube", or "Sphere"
-            if ((hitPrimary.collider && (hitPrimary.collider.tag == "Object" || hitPrimary.collider.tag == "Cube" || hitPrimary.collider.tag == "Lamp" || hitPrimary.collider.tag == "Radio" || hitPrimary.collider.tag == "Sphere")) ||
-                (hitSecondary.collider && (hitSecondary.collider.tag == "Object" ||  hitPrimary.collider.tag == "Lamp"  || hitSecondary.collider.tag == "Radio" || hitSecondary.collider.tag == "Cube" ||hitSecondary.collider.tag == "Sphere")))
+            if ((hitPrimary.collider && (hitPrimary.collider.tag == "Object" || hitPrimary.collider.tag == "Cube" || hitPrimary.collider.tag == "CubeM" || hitPrimary.collider.tag == "CubeR" ||  hitPrimary.collider.tag == "Lamp" || hitPrimary.collider.tag == "Radio" || hitPrimary.collider.tag == "Sphere")) ||
+                (hitSecondary.collider && (hitSecondary.collider.tag == "Object" ||  hitSecondary.collider.tag == "Lamp"  || hitSecondary.collider.tag == "Radio" || hitSecondary.collider.tag == "Cube" || hitSecondary.collider.tag == "CubeM" || hitSecondary.collider.tag == "CubeR" || hitSecondary.collider.tag == "Sphere")))
             {
                 // Enable outline of the object
                 if (hitPrimary.collider)
@@ -588,7 +890,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 1)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")   ))
             {
                 currentObject.transform.Translate(Vector3.forward * Time.deltaTime); // Translate continuously
             }
@@ -596,7 +898,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 2)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Translate(Vector3.up * Time.deltaTime); // Translate continuously
             }
@@ -604,7 +906,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 3)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Translate(Vector3.right * Time.deltaTime); // Translate continuously
             }
@@ -612,7 +914,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 4)
         {
             // Translate the object to the right
-            if (currentObject != null && (currentObject.CompareTag("Cube") )  )
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Translate(Vector3.back * Time.deltaTime); // Translate continuously
             }
@@ -620,7 +922,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 5)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Translate(Vector3.down * Time.deltaTime); // Translate continuously
             }
@@ -628,11 +930,31 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 6)
         {
             // Translate the object to the right
-            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("Lamp"))  || currentObject.CompareTag("Radio"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR") || currentObject.CompareTag("Lamp"))  || currentObject.CompareTag("Radio"))
             {
                 currentObject.transform.Translate(Vector3.left * Time.deltaTime); // Translate continuously
             }
         }
+
+        // no action cube
+        if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 36)
+        {
+            currentObject.transform.rotation = Quaternion.identity;
+            if (currentObject != null && (currentObject.CompareTag("Cube")))
+            {
+                // set position adn rotation here
+                currentObject.transform.position = new Vector3(-7f, 1.5f, -7f);
+            }
+            else if (currentObject.CompareTag("CubeM"))
+            {
+                currentObject.transform.position = new Vector3(-7f, 1.5f, -2f);
+            }
+            else if (currentObject.CompareTag("CubeR"))
+            {
+                currentObject.transform.position = new Vector3(-7f, 2.5f, 3f);
+            }
+        }
+
 
 
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -641,7 +963,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 7)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Rotate(Vector3.forward * 90 * Time.deltaTime); // Rotate continuously
             }
@@ -649,7 +971,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 8)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Rotate(Vector3.up * 90 * Time.deltaTime); // Rotate continuously
             }
@@ -657,7 +979,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 9)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Rotate(Vector3.right * 90 * Time.deltaTime); // Rotate continuously
             }
@@ -665,7 +987,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 10)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Rotate(Vector3.back * 90 * Time.deltaTime); // Rotate continuously
             }
@@ -673,7 +995,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 11)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Rotate(Vector3.down * 90 * Time.deltaTime); // Rotate continuously
             }
@@ -681,7 +1003,7 @@ public class PhysicsPointer : MonoBehaviour
         if (OVRInput.Get(OVRInput.Button.One) && currentOutline != null && mode == 12)
         {
             // Translate the object to the right
-            if (currentObject != null && currentObject.CompareTag("Cube"))
+            if (currentObject != null && (currentObject.CompareTag("Cube") || currentObject.CompareTag("CubeM") || currentObject.CompareTag("CubeR")))
             {
                 currentObject.transform.Rotate(Vector3.left * 90 * Time.deltaTime); // Rotate continuously
             }
@@ -786,36 +1108,14 @@ public class PhysicsPointer : MonoBehaviour
             }
         }*/
 
-        if (OVRInput.GetDown(OVRInput.Button.One) && currentOutline != null && mode == 18) // no action
-        {
-            if (currentObject.CompareTag("Lamp"))
-            {
-                //  reset lamp
-                //  light off
-                Lamp lampScript = currentObject.GetComponent<Lamp>();
-                if (lampScript != null)
-                {
-                    lampScript.TurnOn = false;
-                }
-                // set intensity: lamp obj has pointlight. change the intensity variable of lamp to 1
-                lampScript.intensityVal = 1;
-                // Temporarily disable the Rigidbody's physics updates
-                Rigidbody rb = currentObject.GetComponent<Rigidbody>();
-
-                // Set the lamp's position
-                //currentObject.transform.position = new Vector3(-0.5f, -0.6f, -1.8f);
 
 
-            }
-        }
 
-
-        if (currentOutline != null && mode == -1)
+        if (OVRInput.GetDown(OVRInput.Button.One) && currentOutline != null && mode == -1)
         {
             Debug.Log("Last mode: " + lastActionMode);
-            if (currentObject.CompareTag("Sphere") || (currentObject.CompareTag("Lamp")))
-            {
                 Canvas canvas = currentObject.GetComponentInChildren<Canvas>();
+                Debug.Log("Canvas name: " + canvas.gameObject.name);
                 if (canvas != null)
                 {
                     canvas.enabled = false;
@@ -824,9 +1124,8 @@ public class PhysicsPointer : MonoBehaviour
                 {
                     Debug.Log("CAnvas is null");
                 }
-            }
+            
             mode = lastActionMode;
-
         }
 
 
@@ -835,30 +1134,4 @@ public class PhysicsPointer : MonoBehaviour
         // power mode is 17
     }
 
-    private void ActivateSpriteAtCollisionPoint()
-    {
-        if (collisionSpriteInstance != null)
-        {
-            collisionSpriteInstance.transform.position = collisionPoint;
-            collisionSpriteInstance.SetActive(true);
-            spriteActive = true;
-        }
-    }
-
-    private void UpdateSpritePosition()
-    {
-        if (collisionSpriteInstance != null)
-        {
-            collisionSpriteInstance.transform.position = collisionPoint;
-        }
-    }
-
-    private void DeactivateSprite()
-    {
-        if (collisionSpriteInstance != null)
-        {
-            collisionSpriteInstance.SetActive(false);
-            spriteActive = false;
-        }
-    }
 }

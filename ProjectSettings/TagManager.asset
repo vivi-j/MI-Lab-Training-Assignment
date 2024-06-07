@@ -41,6 +41,17 @@ TagManager:
   - Fill
   - HandleRadio
   - FillRadio
+  - CloseSubCanvasR
+  - CubeM
+  - CubeR
+  - ExitLamp
+  - ExitRadio
+  - RadioCanvas
+  - LampCanvas
+  - TranslationM
+  - TranslationR
+  - RotationM
+  - RotationR
   layers:
   - Default
   - TransparentFX

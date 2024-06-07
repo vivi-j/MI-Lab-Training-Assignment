@@ -164,7 +164,7 @@ LineRenderer:
         outWeight: 0.33333334
       - serializedVersion: 3
         time: 1
-        value: 0.89215374
+        value: 1
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -227,7 +227,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70e62286521bc50468af2e40fd1c4a83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  normalMaterial: {fileID: 0}
+  pressedMaterial: {fileID: 0}
+  pointerRenderer: {fileID: 0}
+  lampIntensity: 0
   defaultLength: 10
+  intensitySlider: {fileID: 0}
+  intensitySliderR: {fileID: 0}
   secondaryPointer: {fileID: 0}
   translationButtonColor: {r: 0, g: 0, b: 0, a: 0}
   originalButtonColor: {r: 0, g: 0, b: 0, a: 0}

@@ -16,8 +16,7 @@ public class AudioSettings : MonoBehaviour
     void Start()
     {
         fillObject = GameObject.FindWithTag("FillRadio");
-        audioSource = gameObject.AddComponent<AudioSource>();
-        audioSource.volume = 1;
+        audioSource = gameObject.GetComponent<AudioSource>();
         fillImage = fillObject.GetComponent<Image>();
         fillImage.color = originalColor;
     }
@@ -53,4 +52,6 @@ public class AudioSettings : MonoBehaviour
     {
         return isPlaying;
     }
+
+   
 }
